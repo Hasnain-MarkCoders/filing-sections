@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .main-container{
+    max-width: 1200px;
+    margin: auto;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    margin-top: 50px;
+    border-radius: 4px;
+    padding: 20px 40px;
+}
+
+#pagination{
+    /* background-color: red; */
+    width: fit-content;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+}
+.custom-btn{
+    border-radius:  50% !important;
+    border: 1px solid rgb(182, 182, 182) !important;
+   
+    display: inline-block;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 1s ease-in;
+}
+.custom-btn:hover{
+    color: black !important;
+    background-color: rgb(223, 223, 223) !important;
+}
+
+#icons-image{
+    width: 16px;
+}
+    </style>
+</head>
+
+<body>
+    <div class="loader" id="loader" style="transform: translate(-50%, -50%); padding-top: 70px">
+        <div class="loader-a"
+            style="border: 16px solid #f3f3f3; border-top: 16px solid #3498db; border-radius: 50%; width: 120px; height: 120px; animation: spin 2s linear infinite; font-size:0px;">
+            --</div>
+    </div>
+    <div class="main-container">
+
+
+        <div id="table-container" style="padding-top: 70px;">
+            <table id="secFilingsTable" class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Form</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">View</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows will be populated by JavaScript -->
+                </tbody>
+            </table>
+            <div id="pagination" style="margin-top: 20px;">
+                <button onclick="previousPage()" class="btn btn-outline-dark custom-btn"><</button>
+                <span id="pageInfo"></span>
+                <button onclick="nextPage()" class="btn btn-outline-dark custom-btn">></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('loader added');
+            //const proxyUrl = 'https://api.allorigins.win/raw?url=';
+            //const url = encodeURIComponent("https://test.markcoders.com/sec-filing/sec-filing-data.json");
+            const url = 'https://json-deployment.vercel.app/db.json'
+            const rowsPerPage = 10;  // Number of rows to show per page
+            let currentPage = 1;
+            let data = [];
+
+            function fetchData() {
+                document.getElementById('loader').style.display = 'block';
+                document.getElementById('table-container').style.display = 'none';
+                fetch(url)
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Network response was not ok.');
+                        }
+                    })
+                    .then(jsonData => {
+                        data = jsonData.data;  // Store fetched data
+                        displayPage(currentPage);  // Display the first page
+                        document.getElementById('loader').style.display = 'none';  // Hide loader
+                        document.getElementById('table-container').style.display = 'block';
+
+                    })
+                    .catch(error => {
+                        console.error('Error loading the SEC filings:', error)
+                        document.getElementById('loader').style.display = 'none';  // Hide loader
+                        document.getElementById('table-container').style.display = 'block';
+
+                    });
+
+            }
+
+            function displayPage(page) {
+                const tableBody = document.getElementById('secFilingsTable').getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = '';  // Clear the current table body
+                const start = (page - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                const pageData = data.slice(start, end);
+                pageData.forEach((filing, index) => {
+                    console.log(filing)
+                    const row = tableBody.insertRow();
+                    row.insertCell(0).textContent = new Date(filing.Date * 1000).toLocaleDateString();
+                    row.insertCell(1).textContent = filing.Form;
+                    row.insertCell(2).textContent = filing.Form_Desc;
+                    const viewCell = row.insertCell(3);
+                    viewCell.innerHTML = `<a href="${filing.html}" target="_blank"><img src="./icons/hyperlink.png" id="icons-image" /></a> | <a href="${filing.pdf}" target="_blank"><img src="./icons/pdf.png" id="icons-image" /></a>`;
+                    if (filing.word) {
+                        viewCell.innerHTML += ` | <a href="${filing.word}" target="_blank"><img src="./icons/word.png" id="icons-image" /></a>`;
+                    }
+                    if (filing.xls) {
+                        viewCell.innerHTML += ` | <a href="${filing.xls}" target="_blank"><img src="./icons/excel.png" id="icons-image" /></a>`;
+                    }
+                    if (filing.acc) {
+                        viewCell.innerHTML += ` | <a href="${filing.acc}" target="_blank"><img src="./icons/link.png" id="icons-image" /></a>`;
+                    }
+                    row.setAttribute('scope', 'row');
+                });
+                updatePageInfo();
+            }
+
+            window.previousPage = function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayPage(currentPage);
+                }
+            }
+
+            window.nextPage = function () {
+                const maxPages = Math.ceil(data.length / rowsPerPage);
+                if (currentPage < maxPages) {
+                    currentPage++;
+                    displayPage(currentPage);
+                }
+            }
+
+            function updatePageInfo() {
+                document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${Math.ceil(data.length / rowsPerPage)}`;
+            }
+
+            fetchData();
+        });
+    </script>
+
+</body>
+
+</html>
